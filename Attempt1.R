@@ -6,7 +6,7 @@ df <- as.data.frame(read_excel("Attrition Sample 11.xlsx"))
 
 
 # Confirm no column has NAs
-
+colSums(is.na(df))
 
 # 525 rows
 nrow(df)
