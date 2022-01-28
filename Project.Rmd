@@ -1,0 +1,240 @@
+---
+title: "Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Get the data
+# Import the data from the shared csv file: Go to file > from text (base) > browse for candy-data.csv and select > make sure the heading button is selected > import
+# Data courtesy of kaggle: https://www.kaggle.com/fivethirtyeight/the-ultimate-halloween-candy-power-ranking/
+
+
+# Load libraries
+```{r lib, echo=FALSE}
+library(rms)
+```
+
+## If you have any categorical variables coded as numeric, you need to convert them to a factor to indicate that they should be treated as a categorical variable in the model
+```{r factor, echo=FALSE}
+#candy.data$chocolate <- factor(candy.data$chocolate)
+candy.data$fruity <- factor(candy.data$fruity)
+candy.data$caramel <- factor(candy.data$caramel)
+candy.data$peanutyalmondy <- factor(candy.data$peanutyalmondy)
+candy.data$nougat <- factor(candy.data$nougat)
+candy.data$crispedricewafer <- factor(candy.data$crispedricewafer)
+candy.data$hard <- factor(candy.data$hard)
+candy.data$bar <- factor(candy.data$bar)
+candy.data$pluribus <- factor(candy.data$pluribus)
+candy.data$sugarpercent = as.numeric(as.character(candy.data$sugarpercent))
+candy.data$pricepercent = as.numeric(as.character(candy.data$pricepercent))
+candy.data$winpercent = as.numeric(as.character(candy.data$winpercent))
+```
+
+# Get a quick description of your data
+```{r descdata, echo=FALSE}
+d <- describe(candy.data)
+html(d, size = 80, scroll = TRUE)
+```
+
+## Produce a two-way contingency table of some predictors and outcome
+## This helpd to ensure there are not 0 cells
+## If any cell has 0 - then collapse that category
+```{r catplot, echo=FALSE}
+# This works only on categorical xs
+# chocolate is y
+xtabs(~chocolate + fruity, data = candy.data)
+xtabs(~chocolate + caramel, data = candy.data)
+xtabs(~chocolate + peanutyalmondy, data = candy.data)
+xtabs(~chocolate + nougat, data = candy.data)
+xtabs(~chocolate + crispedricewafer, data = candy.data)
+xtabs(~chocolate + hard, data = candy.data)
+xtabs(~chocolate + bar, data = candy.data)
+xtabs(~chocolate + pluribus, data = candy.data)
+```
+
+## Prepare the data
+```{r selectpred, echo=FALSE}
+# List of names of variables to analyze
+v <- c('chocolate','fruity','caramel','peanutyalmondy','nougat',
+       'crispedricewafer', 'hard', 'bar', 'pluribus', 'sugarpercent', 
+       'pricepercent', 'winpercent')
+candy.sel <- candy.data[, v]
+```
+
+# Summarize the data more formally
+```{r summarize, echo=FALSE}
+s <- summary(fruity + caramel + peanutyalmondy + nougat + crispedricewafer + 
+             hard + bar + pluribus + sugarpercent + pricepercent + 
+             winpercent ~ chocolate, data = candy.sel, overall = TRUE)
+
+
+html(s, caption='Predictors according to chocolate(Y/N)',
+     exclude1 = TRUE, npct = 'both', digits = 2,
+     prmsd = TRUE, brmsd = TRUE, msdsize = mu$smaller2)
+```
+
+
+# Visualize the relationship between the continuous variables and the outcome to assess linearity
+
+# Histspike bins the continuous x variable into equal-width bins and then computes and plots the frequency counts of Y within each bin. The function then displays the proportions as a vertical histogram with a loess curve fit to the plot.The loess nonparametric smoother is an excellent tool for determining the shape of the relationship between a predictor and the response
+```{r seelin, echo=FALSE}
+# datadist function computes statistical summaries of predictors to  automate 
+# estimation and plotting of effects
+dd <- datadist(candy.sel)
+options(datadist = "dd")
+
+a <- ggplot(candy.sel, aes(x = sugarpercent, y = chocolate)) +
+  histSpikeg(chocolate ~ sugarpercent, lowess = TRUE, data = candy.sel) 
+  labs(x = "\nSugar percentile", y = "Probability(Chocolate)\n")
+
+b <- ggplot(candy.sel, aes(x = pricepercent, y = chocolate)) +
+  histSpikeg(chocolate ~ pricepercent, lowess = TRUE, data = candy.sel) +
+  labs(x = "\nPrice percentile", y = "Probability(Chocolate)\n")
+
+c <- ggplot(candy.sel, aes(x = winpercent, y = chocolate)) +
+  histSpikeg(chocolate ~ winpercent, lowess = TRUE, data = candy.sel) +
+  labs(x = "\nWin percent", y = "Probability(Chocolate)\n")
+
+a
+b
+c
+```
+
+# Consider polynomial transformation for possible non-linearity of sugarpercent
+```{r seepoly, echo=FALSE}
+checkquad <- lrm(chocolate ~ caramel + peanutyalmondy + nougat + crispedricewafer + 
+             hard + bar + pluribus + poly(sugarpercent, 2) + pricepercent + 
+             winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+print(checkquad)
+```
+
+# You and your clinets suspect an interaction between the effect of price 
+# percentile and peanutyalmondy on the log-odds that the candy is chocolate
+```{r seeinter, echo=FALSE}
+checkint <- lrm(chocolate ~ caramel + peanutyalmondy*pricepercent + nougat + crispedricewafer + 
+             hard + bar + pluribus + sugarpercent + 
+             winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+print(checkint)
+```
+
+# Use histspike to look at price percentile for each level of peanutyalmondy
+```{r suspint, echo=FALSE}
+y1 <- ylab(NULL)
+suspint <- ggplot(candy.sel, aes(x = pricepercent, y = chocolate, color=peanutyalmondy)) +
+  histSpikeg(chocolate ~ pricepercent + peanutyalmondy, lowess = TRUE, data = candy.sel) +
+  ylim(0, 1) + y1
+suspint
+```
+
+# Assess multicolinearity
+```{r multicol, echo=FALSE}
+# The VIF function in RMS Computes variance inflation factors from the covariance matrix of parameter estimates
+# RMS VIF will provide estimates for categorical variables
+vif(checkint)
+```
+
+# Look at quick and dirty correlations to look into high VIF variables
+```{r seecorr, echo=FALSE}
+rcorr(as.matrix(candy.sel))
+```
+
+# Remove the variable bar
+```{r rembar, echo=FALSE}
+see <- lrm(chocolate ~ caramel + peanutyalmondy*pricepercent + crispedricewafer + hard + nougat + pluribus + sugarpercent + winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+```
+
+# Reassess multicolinearity
+```{r multicol, echo=FALSE}
+# The VIF function in RMS Computes variance inflation factors from the covariance matrix of parameter estimates
+# RMS VIF will provide estimates for categorical variables
+vif(see)
+```
+
+# Also remove the variable peanutyalmondy
+```{r rembar, echo=FALSE}
+see2 <- lrm(chocolate ~ caramel + pricepercent + crispedricewafer + hard + nougat + pluribus + sugarpercent + winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+```
+
+# Reassess multicolinearity
+```{r multicol, echo=FALSE}
+# The VIF function in RMS Computes variance inflation factors from the covariance matrix of parameter estimates
+# RMS VIF will provide estimates for categorical variables
+vif(see2)
+```
+
+# This is our working model now
+```{r workmod, echo=FALSE}
+work_mod <- lrm(chocolate ~ caramel + pricepercent + crispedricewafer + hard + nougat + pluribus + sugarpercent + winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+```
+
+# Check for infuential observations
+```{r checkinfl, echo=FALSE}
+# The which.influence function creates a list with a component for each  factor  in the model. Each component# contains the observation identifiers of all observations that are “overly influential” with respect to that factor, where |dfbetas| > u. The default u is .2. 
+u2 <- which.influence (work_mod, .4) 
+print(u2)
+```
+
+## CLASS 7
+
+# DATA REDUCTION 
+# Not a statistical decision
+
+# Variable selection
+
+# Use the fastbw funtion to perform fast backward stepwise selection
+```{r var_sel, echo=FALSE}
+fastbw(work_mod)
+```
+
+```{r var_sel_desc_imp, echo=FALSE}
+fastbw(work_mod, aics=10000)
+```
+
+## CLASS 8
+
+
+# Describe the model
+# Running the final selected model final_model
+```{r final_mod, echo=FALSE}
+final_model <- lrm(chocolate ~ winpercent, data = candy.sel, , x=TRUE, y= TRUE)
+print(final_model)
+# Exponentiate the coefficients to get odds ratios
+exp(coef(final_model))
+```
+
+# Use the bootstrap to study the uncertainty in the selection of variables and to penalize for this uncertainty when estimating predictive performance of the model
+# Use the original working model, prior to variable selection so we go through the same process of selecting final predictors using backward variable selection for every bootstrap sample
+```{r val_final, echo=FALSE}
+# Update will update and (by default) re-fit a model. 
+# x - causes the expanded design matrix (with missings excluded) to be returned under the name x. For print, an object created by lrm.
+# y- causes the response variable (with missings excluded) to be returned under the name y.
+work_mod <- update (work_mod, x=TRUE, y=TRUE)  
+val <- validate(work_mod, B=200, bw=TRUE) 
+print(val, B=50, digits =3) 
+```
+
+```{r cal_final, echo=FALSE}
+cal <- calibrate(work_mod, B =200)
+plot(cal)
+```
+
+## You can use the the optimism-corrected slope in the validate output to adjust the original prediction model for optimism
+```{r opt_corr, echo=FALSE}
+shrinkage.factor <- val["Slope","index.corrected"]
+#You multiply the model coefficients (except intercept) by the shrinkage factor (the optimism-corrected slope)
+corr_coef <- data.frame(Original = coef(final_model), shrunk.boot = c(coef(final_model)[1], coef(final_model)[-1] * shrinkage.factor))
+round(corr_coef, 3)
+```
+
+
+
+# The following code allows you to get a plot of the probabilities that a candy is chocolate by winpercent (these are not bias-corrected estimates)
+```{r exp_int, echo=FALSE}
+# datadist function computes statistical summaries of predictors to  automate estimation and plotting of effects
+dd <- datadist(candy.sel); options(datadist='dd')
+prob <- Predict(final_model, winpercent, fun=plogis)
+ggplot (prob)
+```

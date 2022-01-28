@@ -1,0 +1,94 @@
+---
+title: "Project"
+author: "Div, Anant, Simran, Amir"
+date: "28/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load libraries
+```{r lib, echo=FALSE}
+library(rms)
+df <- data.frame(read_excel("Attrition Sample 11.xlsx"))
+```
+
+
+
+## If you have any categorical variables coded as numeric, you need to convert them to a factor to indicate that they should be treated as a categorical variable in the model
+```{r factor, echo=FALSE}
+df$BusinessTravel <- factor(df$BusinessTravel)
+df$Department <- factor(df$Department)
+df$EducationField <- factor(df$EducationField)
+df$Gender <- factor(df$Gender)
+df$JobRole <- factor(df$JobRole)
+df$JobLevel <- factor(df$JobLevel)
+df$Education <- factor(df$Education)
+df$JobSatisfaction <- factor(df$JobSatisfaction)
+df$PerformanceRating <- factor(df$PerformanceRating)
+
+
+df$Age = as.numeric(as.character(df$Age))
+df$DailyRate = as.numeric(as.character(df$DailyRate))
+df$YearsSinceLastPromotion = as.numeric(as.character(df$YearsSinceLastPromotion))
+df$YearsWithCurrManager = as.numeric(as.character(df$YearsWithCurrManager))
+df$MonthlyIncome = as.numeric(as.character(df$MonthlyIncome))
+df$MonthlyRate = as.numeric(as.character(df$MonthlyRate))
+df$PercentSalaryHike = as.numeric(as.character(df$PercentSalaryHike))
+df$TrainingTimesLastYear = as.numeric(as.character(df$TrainingTimesLastYear))
+df$WorkLifeBalance = as.numeric(as.character(df$WorkLifeBalance))
+```
+
+# Get a quick description of your data
+```{r descdata, echo=FALSE}
+d <- describe(df)
+html(d, size = 80, scroll = TRUE)
+```
+
+## Produce a two-way contingency table of some predictors and outcome
+## This helpd to ensure there are not 0 cells
+## If any cell has 0 - then collapse that category
+```{r catplot, echo=FALSE}
+# This works only on categorical xs
+# chocolate is y
+xtabs(~Attrition + BusinessTravel, data = df)
+xtabs(~Attrition + Department, data = df)
+xtabs(~Attrition + EducationField, data = df)
+xtabs(~Attrition + Gender, data = df)
+xtabs(~Attrition + Education, data = df)
+xtabs(~Attrition + JobSatisfaction, data = df)
+xtabs(~Attrition + PerformanceRating, data = df)
+xtabs(~Attrition + JobLevel, data = df)
+xtabs(~Attrition + JobRole, data = df)
+xtabs(~Attrition + JobSatisfaction, data = df)
+```
+
+
+## Prepare the data
+## We need to select our potential predictor variables?
+```{r selectpred, echo=FALSE}
+# List of names of variables to analyze
+v <- c('Attrition','BusinessTravel','Department','EducationField','Gender',
+       'Education', 'JobSatisfaction', 'PerformanceRating', 'JobLevel', 'JobRole', 
+       'Age', 'DailyRate', 'YearsSinceLastPromotion', 'YearsWithCurrManager',
+       'MonthlyIncome', 'MonthlyRate', 'PercentSalaryHike', 'TrainingTimesLastYear',
+       'WorkLifeBalance')
+sel <- df[, v]
+```
+
+
+# Summarize the data more formally
+```{r summarize, echo=FALSE}
+s <- summary(BusinessTravel + Department + EducationField + Gender + Education + 
+             JobSatisfaction + PerformanceRating + JobLevel + JobRole + Age + 
+             DailyRate +  YearsSinceLastPromotion + YearsWithCurrManager + MonthlyIncome
+             + MonthlyRate + PercentSalaryHike + TrainingTimesLastYear + WorkLifeBalance
+             ~ Attrition, data = sel, overall = TRUE)
+
+
+html(s, caption='Predictors according to Attrition(Y/N)',
+     exclude1 = TRUE, npct = 'both', digits = 2,
+     prmsd = TRUE, brmsd = TRUE, msdsize = mu$smaller2)
+```
