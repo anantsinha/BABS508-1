@@ -28,7 +28,8 @@ df$JobLevel <- factor(df$JobLevel)
 df$Education <- factor(df$Education)
 df$JobSatisfaction <- factor(df$JobSatisfaction)
 df$PerformanceRating <- factor(df$PerformanceRating)
-
+df$Attrition <- factor(df$Attrition)
+df$WorkLifeBalance <- factor(df$WorkLifeBalance)
 
 df$Age = as.numeric(as.character(df$Age))
 df$DailyRate = as.numeric(as.character(df$DailyRate))
@@ -38,7 +39,6 @@ df$MonthlyIncome = as.numeric(as.character(df$MonthlyIncome))
 df$MonthlyRate = as.numeric(as.character(df$MonthlyRate))
 df$PercentSalaryHike = as.numeric(as.character(df$PercentSalaryHike))
 df$TrainingTimesLastYear = as.numeric(as.character(df$TrainingTimesLastYear))
-df$WorkLifeBalance = as.numeric(as.character(df$WorkLifeBalance))
 ```
 
 # Get a quick description of your data
@@ -53,19 +53,25 @@ html(d, size = 80, scroll = TRUE)
 ```{r catplot, echo=FALSE}
 # This works only on categorical xs
 # chocolate is y
-xtabs(~Attrition + BusinessTravel, data = df)
-xtabs(~Attrition + Department, data = df)
-xtabs(~Attrition + EducationField, data = df)
-xtabs(~Attrition + Gender, data = df)
-xtabs(~Attrition + Education, data = df)
-xtabs(~Attrition + JobSatisfaction, data = df)
-xtabs(~Attrition + PerformanceRating, data = df)
-xtabs(~Attrition + JobLevel, data = df)
-xtabs(~Attrition + JobRole, data = df)
-xtabs(~Attrition + JobSatisfaction, data = df)
+# Not rejecting on the basis of this - mention in report
+xtabs(~Attrition + BusinessTravel, data = df) #Should include for now
+xtabs(~Attrition + Department, data = df) #Maybe not
+xtabs(~Attrition + EducationField, data = df) # No
+xtabs(~Attrition + Gender, data = df) # Try putting it - check significance
+xtabs(~Attrition + Education, data = df) # Nope
+xtabs(~Attrition + JobSatisfaction, data = df) # Definitely
+xtabs(~Attrition + PerformanceRating, data = df) # This would've been a good observation
+# but we only have data for employees with rating of 3 and above (Excellent and Outstanding)
+# that causes bias
+xtabs(~Attrition + JobLevel, data = df) #Seems significant, confirm if higher number refers to a higher posn
+xtabs(~Attrition + JobRole, data = df) #Try - and check significance and then vif test to check colinearity with Work Life Balance - Simran's favourite
+xtabs(~Attrition + WorkLifeBalance, data = df) # Include
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance
 ```
 
-
+## Would be overly predictive or it would just be an identifier, eg Employee id - these things would have 
+## no bearing on the model, ignore constants also, pick reasonable predictors - based on 
+## rational reasons - 
 ## Prepare the data
 ## We need to select our potential predictor variables?
 ```{r selectpred, echo=FALSE}
@@ -76,6 +82,11 @@ v <- c('Attrition','BusinessTravel','Department','EducationField','Gender',
        'MonthlyIncome', 'MonthlyRate', 'PercentSalaryHike', 'TrainingTimesLastYear',
        'WorkLifeBalance')
 sel <- df[, v]
+
+sel$Attrition <- case_when (
+  sel$Attrition == 'Yes' ~ 1,
+  df$Attrition == 'No' ~ 0,
+)
 ```
 
 
@@ -91,4 +102,55 @@ s <- summary(BusinessTravel + Department + EducationField + Gender + Education +
 html(s, caption='Predictors according to Attrition(Y/N)',
      exclude1 = TRUE, npct = 'both', digits = 2,
      prmsd = TRUE, brmsd = TRUE, msdsize = mu$smaller2)
+```
+
+
+
+
+
+# Visualize the relationship between the continuous variables and the outcome to assess linearity
+
+# Histspike bins the continuous x variable into equal-width bins and then computes and plots the frequency counts of Y within each bin. The function then displays the proportions as a vertical histogram with a loess curve fit to the plot.The loess nonparametric smoother is an excellent tool for determining the shape of the relationship between a predictor and the response
+```{r seelin, echo=FALSE}
+# datadist function computes statistical summaries of predictors to  automate 
+# estimation and plotting of effects
+dd <- datadist(sel)
+options(datadist = "dd")
+
+# Graph for Age
+a <- ggplot(sel, aes(x = Age, y = Attrition)) +
+  histSpikeg(Attrition ~ Age, lowess = TRUE, data = sel) +
+  labs(x = "\nAge", y = "Probability(Attrition)\n")
+
+a
+
+
+# Graph for WorkLifeBalance
+a <- ggplot(sel, aes(x = WorkLifeBalance, y = Attrition)) +
+  histSpikeg(Attrition ~ WorkLifeBalance, lowess = TRUE, data = sel) +
+  labs(x = "\nWorkLifeBalance", y = "Probability(Attrition)\n")
+
+
+a <- ggplot(sel, aes(x = WorkLifeBalance, y = Attrition)) +
+  histSpikeg(Attrition ~ WorkLifeBalance, lowess = TRUE, data = sel) +
+  labs(x = "\nWorkLifeBalance", y = "Probability(Attrition)\n")
+
+a
+```
+
+
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
+ 
+# Consider polynomial transformations for possible non-linearity
+```{r seepoly, echo=FALSE}
+quad_hike <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + poly(PercentSalaryHike, 3), data = sel)
+print(quad_hike)
+```
+## It's clear - 
+# Consider a sex by age interaction
+```{r seeinter, echo=FALSE}
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
+log_mod <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + pol(PercentSalaryHike,2), data = sel, x=TRUE, y= TRUE)
+
+print(log_mod)
 ```
