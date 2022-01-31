@@ -1,6 +1,6 @@
 ---
 title: "Project"
-author: "Div, Anant, Simran, Amir"
+author: "Divasahib, Anant, Simran, Amir"
 date: "28/01/2022"
 output: html_document
 ---
@@ -18,7 +18,7 @@ df <- data.frame(read_excel("Attrition Sample 11.xlsx"))
 
 
 
-## If you have any categorical variables coded as numeric, you need to convert them to a factor to indicate that they should be treated as a categorical variable in the model
+##Convert to a factor and numeric as appropirate
 ```{r factor, echo=FALSE}
 df$BusinessTravel <- factor(df$BusinessTravel)
 df$Department <- factor(df$Department)
@@ -48,12 +48,10 @@ d <- describe(df)
 html(d, size = 80, scroll = TRUE)
 ```
 
-## Produce a two-way contingency table of some predictors and outcome
-## This helpd to ensure there are not 0 cells
-## If any cell has 0 - then collapse that category
+## Producing a two-way contingency table of some predictors and outcome
+## to ensure there are not 0 cells
 ```{r catplot, echo=FALSE}
 # This works only on categorical xs
-# chocolate is y
 # Not rejecting on the basis of this - mention in report
 xtabs(~Attrition + BusinessTravel, data = df) #Should include for now
 xtabs(~Attrition + Department, data = df) #Maybe not
@@ -78,17 +76,13 @@ write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/WorkLifeBalance.xlsx")
 
 df2 <- data.frame(xtabs(~Attrition + BusinessTravel, data = df))
 write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/BusinessTravel")
-# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
 
 
 df2 <- data.frame(xtabs(~Attrition + WorkLifeBalance, data = df))
 write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/WorkLifeBalance.xlsx")
-# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
 
 df2 <- data.frame(xtabs(~Attrition + WorkLifeBalance, data = df))
 write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/PercentHike.xlsx")
-# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
-
 ```
 
 ## Would be overly predictive or it would just be an identifier, eg Employee id - these things would have 
@@ -130,7 +124,7 @@ html(s, caption='Predictors according to Attrition(Y/N)',
 
 
 
-# Visualize the relationship between the continuous variables and the outcome to assess linearity
+# Visualizing the relationship between the continuous variables and the outcome to assess linearity
 
 # Histspike bins the continuous x variable into equal-width bins and then computes and plots the frequency counts of Y within each bin. The function then displays the proportions as a vertical histogram with a loess curve fit to the plot.The loess nonparametric smoother is an excellent tool for determining the shape of the relationship between a predictor and the response
 ```{r seelin, echo=FALSE}
@@ -160,16 +154,12 @@ a <- ggplot(sel, aes(x = WorkLifeBalance, y = Attrition)) +
 a
 ```
 
-
-# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
- 
 # Consider polynomial transformations for possible non-linearity
 ```{r seepoly, echo=FALSE}
 quad_hike <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + poly(PercentSalaryHike, 3), data = sel)
 print(quad_hike)
 ```
-## It's clear - 
-# Consider a sex by age interaction
+
 ```{r seeinter, echo=FALSE}
 # Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
 log_mod <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + pol(PercentSalaryHike,2), data = sel, x=TRUE, y= TRUE)
