@@ -174,3 +174,13 @@ print(log_mod)
 vif(log_mod)
 ```
 
+```{r influential, echo=FALSE}
+# examining influential observations effect
+which.influence(log_mod, 0.4)
+```
+```{r influential, echo=FALSE}
+# Removing influential observations and running the model again
+sel<-sel[-c(10,60),]
+log_mod <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + pol(PercentSalaryHike,2), data = sel, x=TRUE, y= TRUE)
+which.influence(log_mod, 0.4)
+```
