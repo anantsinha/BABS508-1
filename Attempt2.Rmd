@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load libraries
 ```{r lib, echo=FALSE}
 library(rms)
+library(readxl)
 df <- data.frame(read_excel("Attrition Sample 11.xlsx"))
 ```
 
@@ -67,6 +68,27 @@ xtabs(~Attrition + JobLevel, data = df) #Seems significant, confirm if higher nu
 xtabs(~Attrition + JobRole, data = df) #Try - and check significance and then vif test to check colinearity with Work Life Balance - Simran's favourite
 xtabs(~Attrition + WorkLifeBalance, data = df) # Include
 # Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance
+
+
+library("writexl")
+
+df2 <- data.frame(xtabs(~Attrition + WorkLifeBalance, data = df))
+write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/WorkLifeBalance.xlsx")
+
+
+df2 <- data.frame(xtabs(~Attrition + BusinessTravel, data = df))
+write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/BusinessTravel")
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
+
+
+df2 <- data.frame(xtabs(~Attrition + WorkLifeBalance, data = df))
+write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/WorkLifeBalance.xlsx")
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
+
+df2 <- data.frame(xtabs(~Attrition + WorkLifeBalance, data = df))
+write_xlsx(test,"/Users/anant/Documents/GitHub/BABS508-1/PercentHike.xlsx")
+# Finally we are taking - BusinessTravel, JobSatisfaction, WorkLifeBalance, PercentHike (Cont)
+
 ```
 
 ## Would be overly predictive or it would just be an identifier, eg Employee id - these things would have 
@@ -154,3 +176,11 @@ log_mod <- lrm(Attrition ~ BusinessTravel + JobSatisfaction + WorkLifeBalance + 
 
 print(log_mod)
 ```
+
+# Assess multicolinearity
+```{r multicol, echo=FALSE}
+# The VIF function in RMS Computes variance inflation factors from the covariance matrix of parameter estimates
+# RMS VIF will provide estimates for categorical variables
+vif(log_mod)
+```
+
